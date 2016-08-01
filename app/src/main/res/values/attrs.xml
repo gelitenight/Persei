@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="TabLayout">
+        <attr name="tabIndicatorMargin" format="dimension"></attr>
+        <attr name="tabIndicatorRadius" format="dimension"></attr>
+    </declare-styleable>
+</resources>
