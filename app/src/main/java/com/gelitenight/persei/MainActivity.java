@@ -16,16 +16,26 @@
 
 package com.gelitenight.persei;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.graphics.Bitmap;
+import android.graphics.Bitmap.Config;
+import android.graphics.Canvas;
 import android.graphics.Point;
+import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
 import android.support.design.widget.AppBarLayout;
 import android.support.design.widget.AppBarLayout.OnOffsetChangedListener;
+import android.support.v4.app.FragmentTabHost;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.View.OnTouchListener;
+import android.view.ViewAnimationUtils;
+import android.view.animation.AccelerateInterpolator;
+import android.widget.FrameLayout;
 import android.widget.TabHost.OnTabChangeListener;
 
 import com.gelitenight.persei.TabLayout.OnTabSelectedListener;
@@ -45,7 +55,8 @@ public class MainActivity extends AppCompatActivity {
     Toolbar mToolbar;
     AppBarLayout mAppBarLayout;
     TabLayout mTabIndicator;
-    RevealTabHost mTabHost;
+    FragmentTabHost mTabHost;
+    FrameLayout mFragmentContainer;
 
     /**
      * use this view to show fake click ripple effect
@@ -65,7 +76,8 @@ public class MainActivity extends AppCompatActivity {
 
         mToolbar = (Toolbar) findViewById(R.id.toolbar);
         mAppBarLayout = (AppBarLayout) findViewById(R.id.appBarLayout);
-        mTabHost = (RevealTabHost) findViewById(android.R.id.tabhost);
+        mTabHost = (FragmentTabHost) findViewById(android.R.id.tabhost);
+        mFragmentContainer = (FrameLayout) findViewById(R.id.container);
         mTabIndicator = (TabLayout) findViewById(R.id.indicator);
         mRippleView = (RippleView) findViewById(R.id.rippleView);
 
@@ -109,9 +121,35 @@ public class MainActivity extends AppCompatActivity {
                 mRippleView.ripple(mRipplePoint, mTabIndicator.getHeight() / 2);
 
                 // show new tab with reveal animation
-                mTabHost.setRevealPoint(
-                        new Point(mRipplePoint.x, mRipplePoint.y - mTabIndicator.getHeight()));
+                Bitmap bitmap = Bitmap.createBitmap(
+                        mFragmentContainer.getWidth(),
+                        mFragmentContainer.getHeight(),
+                        Config.ARGB_8888);
+                Canvas canvas = new Canvas(bitmap);
+                mFragmentContainer.draw(canvas);
+                mTabHost.setBackground(new BitmapDrawable(getResources(), bitmap));
+
                 mTabHost.setCurrentTabByTag((String) tab.getTag());
+
+                Point mRevealPoint =
+                        new Point(mRipplePoint.x, mRipplePoint.y - mTabIndicator.getHeight());
+                Animator animator = ViewAnimationUtils.createCircularReveal(
+                        mFragmentContainer,
+                        mRevealPoint.x,
+                        mRevealPoint.y,
+                        0,
+                        (float) Math.hypot(mFragmentContainer.getHeight() - mRevealPoint.y,
+                                mFragmentContainer.getWidth()));
+                animator.setDuration(Constant.FRAGMENT_REVEAL_TIME);
+                animator.setInterpolator(new AccelerateInterpolator(1.5f));
+                animator.addListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        mTabHost.setBackground(null);
+                        super.onAnimationEnd(animation);
+                    }
+                });
+                animator.start();
 
                 // collapse the mAppBarLayout when ripple animation is about to end
                 mTabHost.postDelayed(new Runnable() {
@@ -147,7 +185,7 @@ public class MainActivity extends AppCompatActivity {
             bundle.putInt("icon", icons[i]);
 
             mTabHost.addTab(mTabHost.newTabSpec(tabTag).setIndicator(tabTag),
-                    RevealFragment.class, bundle);
+                    ContentFragment.class, bundle);
             mTabIndicator.addTab(mTabIndicator.newTab().setTag(tabTag)
                     .setText(tabTag).setIcon(icons[i]).setCustomView(R.layout.category_item));
         }
