@@ -17,7 +17,7 @@
 package com.gelitenight.persei;
 
 import android.animation.Animator;
-import android.animation.AnimatorListenerAdapter;
+import android.animation.Animator.AnimatorListener;
 import android.animation.ValueAnimator;
 import android.animation.ValueAnimator.AnimatorUpdateListener;
 import android.content.Context;
@@ -63,14 +63,14 @@ public class RippleView extends View {
     }
 
     // start ripple animation
-    public void ripple(Point centerPoint, int maxRadius) {
+    public void ripple(Point centerPoint, int maxRadius, final AnimatorListener listener) {
         mCenter = centerPoint;
         mRadius = 0;
         mPaint.setAlpha(255);
 
-        final ValueAnimator animator = ValueAnimator.ofFloat(0, maxRadius);
-        animator.setDuration(500);
-        animator.addUpdateListener(new AnimatorUpdateListener() {
+        ValueAnimator rippleAnim = ValueAnimator.ofFloat(0, maxRadius);
+        rippleAnim.setDuration(500);
+        rippleAnim.addUpdateListener(new AnimatorUpdateListener() {
             @Override
             public void onAnimationUpdate(ValueAnimator animation) {
                 mRadius = (float) animation.getAnimatedValue();
@@ -78,15 +78,33 @@ public class RippleView extends View {
                 invalidate();
             }
         });
-        animator.addListener(new AnimatorListenerAdapter() {
+        rippleAnim.addListener(new AnimatorListener() {
             @Override
-            public void onAnimationEnd(Animator animation) {
-                super.onAnimationEnd(animation);
+            public void onAnimationStart(Animator animator) {
+                if (listener != null) listener.onAnimationStart(animator);
+
+            }
+
+            @Override
+            public void onAnimationEnd(Animator animator) {
                 animator.removeListener(this);
                 mCenter = null;
+                if (listener != null) listener.onAnimationEnd(animator);
+            }
+
+            @Override
+            public void onAnimationCancel(Animator animator) {
+                animator.removeListener(this);
+                mCenter = null;
+                if (listener != null) listener.onAnimationCancel(animator);
+            }
+
+            @Override
+            public void onAnimationRepeat(Animator animator) {
+                if (listener != null) listener.onAnimationRepeat(animator);
             }
         });
-        animator.start();
+        rippleAnim.start();
     }
 
     @Override

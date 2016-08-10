@@ -59,7 +59,7 @@ public class MainActivity extends AppCompatActivity {
     FrameLayout mFragmentContainer;
 
     /**
-     * use this view to show fake click ripple effect
+     * use this view to show click ripple effect
      */
     RippleView mRippleView;
 
@@ -118,7 +118,14 @@ public class MainActivity extends AppCompatActivity {
                 if (mRipplePoint == null) return;
 
                 // ripple animation
-                mRippleView.ripple(mRipplePoint, mTabIndicator.getHeight() / 2);
+                mRippleView.ripple(mRipplePoint, mTabIndicator.getHeight() / 2,
+                        new AnimatorListenerAdapter() {
+                            @Override
+                            public void onAnimationEnd(Animator animation) {
+                                // collapse the mAppBarLayout when ripple animation is about to end
+                                mAppBarLayout.setExpanded(false, true);
+                            }
+                        });
 
                 // show new tab with reveal animation
                 Bitmap bitmap = Bitmap.createBitmap(
@@ -131,14 +138,14 @@ public class MainActivity extends AppCompatActivity {
 
                 mTabHost.setCurrentTabByTag((String) tab.getTag());
 
-                Point mRevealPoint =
+                Point revealPoint =
                         new Point(mRipplePoint.x, mRipplePoint.y - mTabIndicator.getHeight());
                 Animator animator = ViewAnimationUtils.createCircularReveal(
                         mFragmentContainer,
-                        mRevealPoint.x,
-                        mRevealPoint.y,
+                        revealPoint.x,
+                        revealPoint.y,
                         0,
-                        (float) Math.hypot(mFragmentContainer.getHeight() - mRevealPoint.y,
+                        (float) Math.hypot(mFragmentContainer.getHeight() - revealPoint.y,
                                 mFragmentContainer.getWidth()));
                 animator.setDuration(Constant.FRAGMENT_REVEAL_TIME);
                 animator.setInterpolator(new AccelerateInterpolator(1.5f));
@@ -150,14 +157,6 @@ public class MainActivity extends AppCompatActivity {
                     }
                 });
                 animator.start();
-
-                // collapse the mAppBarLayout when ripple animation is about to end
-                mTabHost.postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        mAppBarLayout.setExpanded(false, true);
-                    }
-                }, 400);
             }
 
             @Override
